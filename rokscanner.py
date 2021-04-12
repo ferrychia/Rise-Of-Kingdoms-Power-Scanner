@@ -190,7 +190,7 @@ def changeProfile(df):
 
 if __name__ == '__main__':
     df = pd.DataFrame(columns=(
-    'id', 'nick','alliance','profile_power', 'current_power', 'dead', 'total_kill_pt','kill_1', 'kill_2', 'kill_3', 'kill_4', 'kill_5','valid'))
+    'id', 'nick','alliance','profile_power', 'current_power', 'dead', 'total_kill_pt','kill_1', 'kill_2', 'kill_3', 'kill_4', 'kill_5','validKillPoint','validPower'))
 
     t = datetime.datetime.now()
     table_name = os.path.join(t.strftime('result/ROK_K530_Top1000_%Y%m%d%H%M%S') + '.csv')
@@ -264,10 +264,10 @@ if __name__ == '__main__':
         img_kill_t5.save('t5.png')
         kill_t5 = OCR_box(img_kill_t5)
         print('t5 kill:', kill_t5)
-        sum_kill_point = kill_t1/5 + kill_t2*2 + kill_t3*4 + kill_t4*10 + kill_t5*20
-        print('sum kill point:',sum_kill_point)
+        checksum_kill_point = kill_t1/5 + kill_t2*2 + kill_t3*4 + kill_t4*10 + kill_t5*20
+        print('sum kill point:',checksum_kill_point)
         # verify if kill point is valid
-        valid = (int(total_kill_point) == int(sum_kill_point))
+        valid = (int(total_kill_point) == int(checksum_kill_point))
         print('is kill point valid?:', valid)
 
         # move to more info and click
@@ -301,7 +301,9 @@ if __name__ == '__main__':
             dead_troops = OCR_box(img_dead)
         print('dead:', dead_troops)
 
-        df.loc[i] = [id, nick,alliance,profile_power, current_power, dead_troops,total_kill_point, kill_t1, kill_t2, kill_t3, kill_t4, kill_t5,valid]
+        validPower = (int(profile_power) == int(current_power))
+
+        df.loc[i] = [id, nick,alliance,profile_power, current_power, dead_troops,checksum_kill_point, kill_t1, kill_t2, kill_t3, kill_t4, kill_t5,valid,validPower]
         # move to close and click (Closing more info box)
         pyautogui.moveTo(1515, 190)
         time.sleep(1)
