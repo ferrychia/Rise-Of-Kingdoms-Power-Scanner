@@ -9,7 +9,6 @@ import pyscreenshot as ImageGrab
 import clipboard
 
 
-
 class ROKScanner:
     bluestackPath = r"/Applications/BlueStacks.app"
     #scale the bluestack to non-full screen
@@ -186,6 +185,7 @@ def changeProfile(df):
         return img
     else:
         return check_img;
+
 
 
 if __name__ == '__main__':
