@@ -12,6 +12,10 @@ import clipboard
 
 class ROKScanner:
     bluestackPath = r"/Applications/BlueStacks.app"
+    #scale the bluestack to non-full screen
+    #location placed at:
+    #top left: 208,97
+    #bottom right: 1712,984
 
     def screenCapture(name: str):
         # part of the screen
@@ -192,9 +196,13 @@ def changeProfile(df):
 
 
 if __name__ == '__main__':
+
+    width, height = pyautogui.size()
+    print(width)
+    print(height)
+
     df = pd.DataFrame(columns=(
-    'id', 'nick','alliance','profile_power', 'current_power', 'dead',
-    'kill_total', 'kill_1', 'kill_2', 'kill_3', 'kill_4', 'kill_5'))
+    'id', 'nick','alliance','profile_power', 'current_power', 'dead', 'kill_1', 'kill_2', 'kill_3', 'kill_4', 'kill_5'))
 
     t = datetime.datetime.now()
     table_name = os.path.join(t.strftime('result/ROK_K530_Top1000_%Y%m%d%H%M%S') + '.csv')
@@ -209,7 +217,7 @@ if __name__ == '__main__':
     # mouse.press(Button.left)
     # mouse.release(Button.left)
 
-    for i in range(350):
+    for i in range(950):
         # move to ranking position 1-3
         if i < 3:
             selectProfile(i)
@@ -249,30 +257,24 @@ if __name__ == '__main__':
         copyNickSelectKillDetail()
         nick = clipboard.paste()
         print("Nick: ", nick)
-        # capture screen
-        img = ROKScanner.screenCapture('profile')
-        # crop image to total kill
-        img_kill_total = img.crop([370, 135, 600, 160])
-        img_kill_total.save('totalkill.png')
-        kill_total = OCR_box(img_kill_total)
-        print('total kill:', kill_total)
-        img_kill_t1 = img.crop([325, 220, 440, 245])
+        # capture T1 Kills
+        img_kill_t1 = ImageGrab.grab(bbox=(1020, 714, 1150, 754))
         img_kill_t1.save('t1.png')
         kill_t1 = OCR_box(img_kill_t1)
         print('t1 kill:', kill_t1)
-        img_kill_t2 = img.crop([475, 220, 600, 245])
+        img_kill_t2 = ImageGrab.grab(bbox=(1020, 755, 1150, 795))
         img_kill_t2.save('t2.png')
         kill_t2 = OCR_box(img_kill_t2)
         print('t2 kill:', kill_t2)
-        img_kill_t3 = img.crop([325, 260, 445, 285])
+        img_kill_t3 = ImageGrab.grab(bbox=(1020, 796, 1150, 836))
         img_kill_t3.save('t3.png')
         kill_t3 = OCR_box(img_kill_t3)
         print('t3 kill:', kill_t3)
-        img_kill_t4 = img.crop([475, 260, 600, 285])
+        img_kill_t4 = ImageGrab.grab(bbox=(1020, 838, 1150, 878))
         img_kill_t4.save('t4.png')
         kill_t4 = OCR_box(img_kill_t4)
         print('t4 kill:', kill_t4)
-        img_kill_t5 = img.crop([325, 295, 600, 320])
+        img_kill_t5 = ImageGrab.grab(bbox=(1020, 880, 1150, 920))
         img_kill_t5.save('t5.png')
         kill_t5 = OCR_box(img_kill_t5)
         print('t5 kill:', kill_t5)
@@ -313,7 +315,7 @@ if __name__ == '__main__':
         # dead and power as checksum if 0 then save picture for human verification
         #checker(img_info, current_power, i, 'info')
         #checker(img_info, dead_troops, i, 'info')
-        df.loc[i] = [id, nick,alliance,profile_power, current_power, dead_troops, kill_total, kill_t1, kill_t2, kill_t3, kill_t4, kill_t5]
+        df.loc[i] = [id, nick,alliance,profile_power, current_power, dead_troops, kill_t1, kill_t2, kill_t3, kill_t4, kill_t5]
         # move to close and click (Closing more info box)
         pyautogui.moveTo(1515, 190)
         time.sleep(1)
