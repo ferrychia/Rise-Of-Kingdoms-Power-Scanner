@@ -120,13 +120,6 @@ def w2b(image_tmp):
     return new_image
 
 
-def checker(image, checksum, index, name):
-    if checksum == 0:
-        img_name = name + '_' + str(index) + '.png'
-        print(img_name)
-        image.save(img_name)
-
-
 def checkPlayerId(id, df):
     if df['id'].str.contains(id).any() or not id:
         print('skipping because player info already collected: ', id)
@@ -196,26 +189,13 @@ def changeProfile(df):
 
 
 if __name__ == '__main__':
-
-    width, height = pyautogui.size()
-    print(width)
-    print(height)
-
     df = pd.DataFrame(columns=(
-    'id', 'nick','alliance','profile_power', 'current_power', 'dead', 'kill_1', 'kill_2', 'kill_3', 'kill_4', 'kill_5'))
+    'id', 'nick','alliance','profile_power', 'current_power', 'dead', 'total_kill_pt','kill_1', 'kill_2', 'kill_3', 'kill_4', 'kill_5','valid'))
 
     t = datetime.datetime.now()
     table_name = os.path.join(t.strftime('result/ROK_K530_Top1000_%Y%m%d%H%M%S') + '.csv')
 
     os.system("open /Applications/BlueStacks.app")
-
-    # Move position to ROK App
-    # Anchor position of App window at 209,96 to 1712,983
-    # mouse.position = (346.3623046875, 240.17605590820312)
-    # time.sleep(0.5)
-    # Press and release on ROK app
-    # mouse.press(Button.left)
-    # mouse.release(Button.left)
 
     for i in range(950):
         # move to ranking position 1-3
@@ -257,6 +237,12 @@ if __name__ == '__main__':
         copyNickSelectKillDetail()
         nick = clipboard.paste()
         print("Nick: ", nick)
+        # capture Total Kills Point
+        img_total_kill_point = ImageGrab.grab(bbox=(1075, 505, 1225, 535))
+        img_total_kill_point.save('total_kill_pt.png')
+        total_kill_point = OCR_box(img_total_kill_point)
+        print('total kill point:', total_kill_point)
+
         # capture T1 Kills
         img_kill_t1 = ImageGrab.grab(bbox=(1020, 714, 1150, 754))
         img_kill_t1.save('t1.png')
@@ -278,9 +264,12 @@ if __name__ == '__main__':
         img_kill_t5.save('t5.png')
         kill_t5 = OCR_box(img_kill_t5)
         print('t5 kill:', kill_t5)
+        sum_kill_point = kill_t1/5 + kill_t2*2 + kill_t3*4 + kill_t4*10 + kill_t5*20
+        print('sum kill point:',sum_kill_point)
+        # verify if kill point is valid
+        valid = (int(total_kill_point) == int(sum_kill_point))
+        print('is kill point valid?:', valid)
 
-        # kill_total as checksum if 0 then save picture for human verification
-        #checker(img, kill_total, i, 'profile')
         # move to more info and click
         pyautogui.moveTo(580, 765)
         time.sleep(1)
@@ -312,10 +301,7 @@ if __name__ == '__main__':
             dead_troops = OCR_box(img_dead)
         print('dead:', dead_troops)
 
-        # dead and power as checksum if 0 then save picture for human verification
-        #checker(img_info, current_power, i, 'info')
-        #checker(img_info, dead_troops, i, 'info')
-        df.loc[i] = [id, nick,alliance,profile_power, current_power, dead_troops, kill_t1, kill_t2, kill_t3, kill_t4, kill_t5]
+        df.loc[i] = [id, nick,alliance,profile_power, current_power, dead_troops,total_kill_point, kill_t1, kill_t2, kill_t3, kill_t4, kill_t5,valid]
         # move to close and click (Closing more info box)
         pyautogui.moveTo(1515, 190)
         time.sleep(1)
