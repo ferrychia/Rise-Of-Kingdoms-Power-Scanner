@@ -11,25 +11,25 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
 class ROKScanner:
-    #Settings
+    #Global Settings
+    no_run = 100
+    # Whitelist all your alliance character you wished to track
+    alliance_list = ['K530', 'PK30', '666', 'KOPO', 'PB30']
     save_local = True
-    save_google = False
-    no_run = 950
+    save_google = True
+
+    #Google Settings
+    worksheet_filename = 'Kingdom Player Datasheet'
+    sheetname_OCR = 'OCR DATA'
+    sheetname_kingdom_register = 'K530 Player Register'
+
+    #bluestackpath
     bluestackPath = r"/Applications/BlueStacks.app"
+    #setup and positioning
     #scale the bluestack to non-full screen
     #location placed at:
     #top left: 208,97
     #bottom right: 1712,984
-
-    def screenCapture(name: str):
-        # part of the screen
-        if name == 'profile':
-            im = ImageGrab.grab(bbox=(815, 361, 1420, 700))  # X1,Y1,X2,Y2
-        else:
-            im = ImageGrab.grab(bbox=(970, 270, 1450, 590))  # X1,Y1,X2,Y2
-        # save image file
-        im.save("%s.png" % name)
-        return im
 
 
 # 获取图片中像素点数量最多的像素
@@ -94,11 +94,8 @@ def OCR_digital(image_to_recognize):
     # 去掉图片中的噪声（孤立点）
     out = cut_noise(out)
     # 仅识别图片中的数字
-    text = pytesseract.image_to_string(out, config='digits')
-    # 去掉识别结果中的特殊字符
-    exclude_char_list = ' .:\\|\'\"?![],()~@#$%^&*_+-={};<>/¥'
-    text = ''.join([x for x in text if x not in exclude_char_list])
-    text = text.strip()
+    text = pytesseract.image_to_string(out, config='-c tessedit_char_whitelist=01234567890 --psm 7')
+
     return text
 
 
@@ -185,7 +182,17 @@ def changeProfile(df):
             selectProfile(6)
 
 
+def updateKingdomRegister(df, id, nick,alliance,register_sheet):
+    if any(df.ID == int(id)):
+        print("updating existing record")
+        df.loc[df.ID == int(id), 'NAME'] = nick
+        if (alliance in ROKScanner.alliance_list):
+            df.loc[df.ID == int(id), 'ALLIANCE'] = alliance
+    else:
+        print("adding new record")
+        df.loc[len(df)] = [id,nick,alliance,'']
 
+    register_sheet.update([df.columns.values.tolist()] + df.values.tolist())
 
 if __name__ == '__main__':
     if ROKScanner.save_google:
@@ -195,38 +202,18 @@ if __name__ == '__main__':
         client = gspread.authorize(creds)
 
         # Open Workbook and sheet
-        file = client.open("Kingdom Player Datasheet")
-        OCR_Sheet = file.worksheet("OCR DATA")
-        #@TODO: Auto update kingdom register, after alliance mapping is completed
-        #df_player_register = pd.DataFrame(file.worksheet("K530 Player Register").get_all_records())
-        #print(df_player_register)
-        # exists = 67765978 in df_player_register["Player ID"].values
-        # if exists:
-        #     print("ok update name")
-        #     print(df_player_register.loc[df_player_register['Player ID'] == 67765978] )
-        #     list = df_player_register.loc[67765978]
-        #
-        #     print(list)
-        #     print(df_player_register.loc[df_player_register['Player ID'] == 67765978] )
-        #     if ('new name' in df_player_register.loc[df_player_register['Player ID'] == 67765978]):
-        #         print('found new name')
-        #     else:
-        #         print('failed')
-        #
-        # else:
-        #     print("ok add new record")
-        #     df_player_register.loc[len(df_player_register)] = [11111,'abc','','']
-        #     print(df_player_register)
-        #     df_player_register
-        #     test_sheet = file.worksheet("test")
-        #     test_sheet.update([df_player_register.columns.values.tolist()] + df_player_register.values.tolist())
+        file = client.open(ROKScanner.worksheet_filename)
+        OCR_Sheet = file.worksheet(ROKScanner.sheetname_OCR)
+        Register_Sheet = file.worksheet(ROKScanner.sheetname_kingdom_register)
+        #initial load kingdom register into dataframe
+        df_player_register = pd.DataFrame(file.worksheet(ROKScanner.sheetname_kingdom_register).get_all_records())
 
     #Get time now for record insertion
     now = datetime.datetime.now()
     date_time = now.strftime("%m/%d/%Y %H:%M:%S")
 
     if ROKScanner.save_local:
-        save_local_file_name = os.path.join(now.strftime('result/ROK_K530_Top950_%Y%m%d%H%M%S') + '.csv')
+        save_local_file_name = os.path.join(now.strftime('result/ROK_K530_Top' + str(ROKScanner.no_run) + '_%Y%m%d%H%M%S') + '.csv')
 
 
     df = pd.DataFrame(columns=(
@@ -260,16 +247,24 @@ if __name__ == '__main__':
             id = OCR_digital(img_id)
 
         #alliance
-        img_alliance = ImageGrab.grab(bbox=(815, 485, 890, 510))
+        img_alliance = ImageGrab.grab(bbox=(823, 485, 880, 505))
+        img_alliance = cut_noise(img_alliance)
         img_alliance.save('alliance.png')
-        alliance = pytesseract.image_to_string(img_alliance)
-        print('before alliance: ', alliance)
-        #@TODO: add alliance mapping
-        #print('after alliance: ', alliance)
+        alliance = pytesseract.image_to_string(img_alliance,config='-c tessedit_char_whitelist=PK530PO6B --psm 7').strip()
+
+        if alliance not in ROKScanner.alliance_list:
+            print(f'Alliance is not found in alliance whitelist: <{alliance}>')
+            #retry for 3 characters alliances
+            img_alliance = ImageGrab.grab(bbox=(823, 485, 866, 505))
+            img_alliance = cut_noise(img_alliance)
+            #img_alliance.save('alliance.png')
+            alliance = pytesseract.image_to_string(img_alliance, config='-c tessedit_char_whitelist=PK530PO6B --psm 7').strip()
+
+        print(f'Alliance: <{alliance}>')
 
         # profile_power
-        img_profile_power = ImageGrab.grab(bbox=(1040, 480, 1220, 510))
-        img_profile_power.save('profile_power.png')
+        img_profile_power = ImageGrab.grab(bbox=(1050, 480, 1200, 510))
+        #img_profile_power.save('profile_power.png')
         profile_power = OCR_digital(img_profile_power)
         print('profile power: ', profile_power)
 
@@ -279,29 +274,29 @@ if __name__ == '__main__':
         print("Nick: ", nick)
         # capture Total Kills Point
         img_total_kill_point = ImageGrab.grab(bbox=(1075, 505, 1225, 535))
-        img_total_kill_point.save('total_kill_pt.png')
+        #img_total_kill_point.save('total_kill_pt.png')
         total_kill_point = OCR_box(img_total_kill_point)
         print('total kill point:', total_kill_point)
 
         # capture T1 Kills
         img_kill_t1 = ImageGrab.grab(bbox=(1020, 714, 1150, 754))
-        img_kill_t1.save('t1.png')
+        #img_kill_t1.save('t1.png')
         kill_t1 = OCR_box(img_kill_t1)
         print('t1 kill:', kill_t1)
         img_kill_t2 = ImageGrab.grab(bbox=(1020, 755, 1150, 795))
-        img_kill_t2.save('t2.png')
+        #img_kill_t2.save('t2.png')
         kill_t2 = OCR_box(img_kill_t2)
         print('t2 kill:', kill_t2)
         img_kill_t3 = ImageGrab.grab(bbox=(1020, 796, 1150, 836))
-        img_kill_t3.save('t3.png')
+        #img_kill_t3.save('t3.png')
         kill_t3 = OCR_box(img_kill_t3)
         print('t3 kill:', kill_t3)
         img_kill_t4 = ImageGrab.grab(bbox=(1020, 838, 1150, 878))
-        img_kill_t4.save('t4.png')
+        #img_kill_t4.save('t4.png')
         kill_t4 = OCR_box(img_kill_t4)
         print('t4 kill:', kill_t4)
         img_kill_t5 = ImageGrab.grab(bbox=(1020, 880, 1150, 920))
-        img_kill_t5.save('t5.png')
+        #img_kill_t5.save('t5.png')
         kill_t5 = OCR_box(img_kill_t5)
         print('t5 kill:', kill_t5)
         checksum_kill_point = kill_t1/5 + kill_t2*2 + kill_t3*4 + kill_t4*10 + kill_t5*20
@@ -316,16 +311,15 @@ if __name__ == '__main__':
         pyautogui.click()
         time.sleep(1)
         # capture screen
-        img_info = ROKScanner.screenCapture('info')
         img_dead = ImageGrab.grab(bbox=(1320, 560, 1435, 590))
         img_dead = w2b(img_dead)
-        img_dead.save('dead.png')
+        #img_dead.save('dead.png')
         dead_troops = OCR_box(img_dead)
         if dead_troops == 0:
             # retry screen capture on info
             img_dead = ImageGrab.grab(bbox=(1320, 560, 1435, 590))
             img_dead = w2b(img_dead)
-            img_dead.save('dead.png')
+            #img_dead.save('dead.png')
             dead_troops = OCR_box(img_dead)
         print('dead:', dead_troops)
         # move to close and click (Closing more info box)
@@ -339,5 +333,6 @@ if __name__ == '__main__':
         df.loc[i] = [id, nick,alliance,profile_power, dead_troops,checksum_kill_point, kill_t1, kill_t2, kill_t3, kill_t4, kill_t5,valid]
         if ROKScanner.save_google:
             OCR_Sheet.append_row([date_time,id,profile_power,dead_troops,checksum_kill_point,kill_t1,kill_t2,kill_t3,kill_t4,kill_t5])
+            updateKingdomRegister(df_player_register, id, nick, alliance,Register_Sheet)
         if ROKScanner.save_local:
             df.to_csv(save_local_file_name)
