@@ -12,7 +12,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 class ROKScanner:
     #Global Settings
-    no_run = 100
+    no_run = 900
     # Whitelist all your alliance character you wished to track
     alliance_list = ['K530', 'PK30', '666', 'KOPO', 'PB30']
     save_local = True
@@ -21,6 +21,7 @@ class ROKScanner:
     #Google Settings
     worksheet_filename = 'Kingdom Player Datasheet'
     sheetname_OCR = 'OCR DATA'
+    updateRegister = True
     sheetname_kingdom_register = 'K530 Player Register'
 
     #bluestackpath
@@ -188,6 +189,7 @@ def updateKingdomRegister(df, id, nick,alliance,register_sheet):
         df.loc[df.ID == int(id), 'NAME'] = nick
         if (alliance in ROKScanner.alliance_list):
             df.loc[df.ID == int(id), 'ALLIANCE'] = alliance
+        df.loc[df.ID == int(id), 'INKD'] = ''
     else:
         print("adding new record")
         df.loc[len(df)] = [id,nick,alliance,'']
@@ -204,13 +206,14 @@ if __name__ == '__main__':
         # Open Workbook and sheet
         file = client.open(ROKScanner.worksheet_filename)
         OCR_Sheet = file.worksheet(ROKScanner.sheetname_OCR)
-        Register_Sheet = file.worksheet(ROKScanner.sheetname_kingdom_register)
-        #initial load kingdom register into dataframe
-        df_player_register = pd.DataFrame(file.worksheet(ROKScanner.sheetname_kingdom_register).get_all_records())
+        if ROKScanner.updateRegister:
+            Register_Sheet = file.worksheet(ROKScanner.sheetname_kingdom_register)
+            #initial load kingdom register into dataframe
+            df_player_register = pd.DataFrame(file.worksheet(ROKScanner.sheetname_kingdom_register).get_all_records())
 
     #Get time now for record insertion
     now = datetime.datetime.now()
-    date_time = now.strftime("%m/%d/%Y %H:%M:%S")
+    date_time = now.strftime('%Y-%m-%d %H:%M:%S.%f')
 
     if ROKScanner.save_local:
         save_local_file_name = os.path.join(now.strftime('result/ROK_K530_Top' + str(ROKScanner.no_run) + '_%Y%m%d%H%M%S') + '.csv')
@@ -332,7 +335,8 @@ if __name__ == '__main__':
         #update record
         df.loc[i] = [id, nick,alliance,profile_power, dead_troops,checksum_kill_point, kill_t1, kill_t2, kill_t3, kill_t4, kill_t5,valid]
         if ROKScanner.save_google:
-            OCR_Sheet.append_row([date_time,id,profile_power,dead_troops,checksum_kill_point,kill_t1,kill_t2,kill_t3,kill_t4,kill_t5])
-            updateKingdomRegister(df_player_register, id, nick, alliance,Register_Sheet)
+            OCR_Sheet.append_row([date_time,int(id),profile_power,dead_troops,checksum_kill_point,kill_t1,kill_t2,kill_t3,kill_t4,kill_t5])
+            if ROKScanner.updateRegister:
+                updateKingdomRegister(df_player_register, id, nick, alliance,Register_Sheet)
         if ROKScanner.save_local:
             df.to_csv(save_local_file_name)
