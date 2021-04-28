@@ -7,7 +7,8 @@ from collections import defaultdict
 import pyautogui
 import pyscreenshot as ImageGrab
 import clipboard
-
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
 class ROKScanner:
     bluestackPath = r"/Applications/BlueStacks.app"
@@ -15,7 +16,6 @@ class ROKScanner:
     #location placed at:
     #top left: 208,97
     #bottom right: 1712,984
-
     def screenCapture(name: str):
         # part of the screen
         if name == 'profile':
@@ -155,49 +155,88 @@ def selectProfile(index):
     time.sleep(1)
     pyautogui.click()
     time.sleep(1)
-    # TODO: check id here and if valid then continue, if not keep try to select next profile cycle
-    # TO HANDLE if 4,5,6 unable to select scenario which leads to resource page
-
 
 def changeProfile(df):
     # select 5th profile, skipping 4th profile
+    closeProfile()
     selectProfile(4)
-    # capture screen
-    check_img = ROKScanner.screenCapture('profile')
     # crop image to id only
-    check_img_id = check_img.crop([120, 0, 220, 25])
+    check_img_id = ImageGrab.grab(bbox=(935, 360, 1035, 385))
     # read ID
     check_id = OCR_digital(check_img_id)
     if checkPlayerId(check_id, df):
+        #close and back to select profile
+        closeProfile()
         # select 5th profile again
         selectProfile(5)
-        # capture screen
-        img = ROKScanner.screenCapture('profile')
         # crop image to id only
-        check2_img_id = img.crop([120, 0, 220, 25])
+        check2_img_id = ImageGrab.grab(bbox=(935, 360, 1035, 385))
         # read ID
         check2_id = OCR_digital(check2_img_id)
         # if 5th profile still doesn't work
         if checkPlayerId(check2_id, df):
             # select 6th profile
+            closeProfile()
             selectProfile(6)
-            img = ROKScanner.screenCapture('profile')
-        return img
-    else:
-        return check_img;
+
 
 
 
 if __name__ == '__main__':
-    df = pd.DataFrame(columns=(
-    'id', 'nick','alliance','profile_power', 'current_power', 'dead', 'total_kill_pt','kill_1', 'kill_2', 'kill_3', 'kill_4', 'kill_5','validKillPoint','validPower'))
 
-    t = datetime.datetime.now()
-    table_name = os.path.join(t.strftime('result/ROK_K530_Top1000_%Y%m%d%H%M%S') + '.csv')
+    #Settings
+    save_local = True
+    save_google = False
+    no_run = 950
+
+    if save_google:
+        # use creds to create a client to interact with the Google Drive API
+        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+        creds = ServiceAccountCredentials.from_json_keyfile_name('secret.json', scope)
+        client = gspread.authorize(creds)
+
+        # Open Workbook and sheet
+        file = client.open("Kingdom Player Datasheet")
+        OCR_Sheet = file.worksheet("OCR DATA")
+        #@TODO: Auto update kingdom register, after alliance mapping is completed
+        #df_player_register = pd.DataFrame(file.worksheet("K530 Player Register").get_all_records())
+        #print(df_player_register)
+        # exists = 67765978 in df_player_register["Player ID"].values
+        # if exists:
+        #     print("ok update name")
+        #     print(df_player_register.loc[df_player_register['Player ID'] == 67765978] )
+        #     list = df_player_register.loc[67765978]
+        #
+        #     print(list)
+        #     print(df_player_register.loc[df_player_register['Player ID'] == 67765978] )
+        #     if ('new name' in df_player_register.loc[df_player_register['Player ID'] == 67765978]):
+        #         print('found new name')
+        #     else:
+        #         print('failed')
+        #
+        # else:
+        #     print("ok add new record")
+        #     df_player_register.loc[len(df_player_register)] = [11111,'abc','','']
+        #     print(df_player_register)
+        #     df_player_register
+        #     test_sheet = file.worksheet("test")
+        #     test_sheet.update([df_player_register.columns.values.tolist()] + df_player_register.values.tolist())
+
+    #Get time now for record insertion
+    now = datetime.datetime.now()
+    date_time = now.strftime("%m/%d/%Y %H:%M:%S")
+
+    if save_local:
+        save_local_file_name = os.path.join(now.strftime('result/ROK_K530_Top950_%Y%m%d%H%M%S') + '.csv')
+
+
+    df = pd.DataFrame(columns=(
+        'id', 'nick', 'alliance', 'profile_power', 'dead', 'total_kill_pt', 'kill_1', 'kill_2',
+        'kill_3', 'kill_4', 'kill_5', 'validKillPoint'))
+
 
     os.system("open /Applications/BlueStacks.app")
-
-    for i in range(950):
+    for i in range(no_run):
         # move to ranking position 1-3
         if i < 3:
             selectProfile(i)
@@ -206,29 +245,31 @@ if __name__ == '__main__':
         else:
             selectProfile(3)
 
-
-        # capture screen
-        img = ROKScanner.screenCapture('profile')
         # crop image to id only
-        img_id = img.crop([120, 0, 220, 25])
+        img_id = ImageGrab.grab(bbox=(935, 360, 1035, 385))
+        img_id.save('id.png')
         # read ID
         id = OCR_digital(img_id)
         print('player id:', id)
 
         if checkPlayerId(id, df):
-            img = changeProfile(df)
+            changeProfile(df)
             # crop image to id only
-            img_id = img.crop([120, 0, 220, 25])
+            img_id = ImageGrab.grab(bbox=(935, 360, 1035, 385))
+            img_id.save('id.png')
             # read ID
             id = OCR_digital(img_id)
 
         #alliance
-        img_alliance = img.crop([0, 120, 70, 150])
+        img_alliance = ImageGrab.grab(bbox=(815, 485, 890, 510))
         img_alliance.save('alliance.png')
         alliance = pytesseract.image_to_string(img_alliance)
-        print('alliance: ', alliance)
+        print('before alliance: ', alliance)
+        #@TODO: add alliance mapping
+        #print('after alliance: ', alliance)
+
         # profile_power
-        img_profile_power = img.crop([230, 115, 400, 145])
+        img_profile_power = ImageGrab.grab(bbox=(1040, 480, 1220, 510))
         img_profile_power.save('profile_power.png')
         profile_power = OCR_digital(img_profile_power)
         print('profile power: ', profile_power)
@@ -277,33 +318,17 @@ if __name__ == '__main__':
         time.sleep(1)
         # capture screen
         img_info = ROKScanner.screenCapture('info')
-        img_current_power = img_info.crop([0, 0, 150, 30])
-        img_current_power = w2b(img_current_power)
-        img_current_power.save('currentPower.png')
-        current_power = OCR_box(img_current_power)
-        if current_power == 0:
-            # retry screen capture on info
-            img_info = ROKScanner.screenCapture('info')
-            img_current_power = img_info.crop([0, 0, 150, 30])
-            img_current_power = w2b(img_current_power)
-            img_current_power.save('currentPower.png')
-            current_power = OCR_box(img_current_power)
-        print('current power:', current_power)
-        img_dead = img_info.crop([320, 290, 490, 325])
+        img_dead = ImageGrab.grab(bbox=(1320, 560, 1435, 590))
         img_dead = w2b(img_dead)
         img_dead.save('dead.png')
         dead_troops = OCR_box(img_dead)
         if dead_troops == 0:
             # retry screen capture on info
-            img_dead = img_info.crop([320, 290, 490, 325])
+            img_dead = ImageGrab.grab(bbox=(1320, 560, 1435, 590))
             img_dead = w2b(img_dead)
             img_dead.save('dead.png')
             dead_troops = OCR_box(img_dead)
         print('dead:', dead_troops)
-
-        validPower = (int(profile_power) == int(current_power))
-
-        df.loc[i] = [id, nick,alliance,profile_power, current_power, dead_troops,checksum_kill_point, kill_t1, kill_t2, kill_t3, kill_t4, kill_t5,valid,validPower]
         # move to close and click (Closing more info box)
         pyautogui.moveTo(1515, 190)
         time.sleep(1)
@@ -311,6 +336,9 @@ if __name__ == '__main__':
         time.sleep(1)
         # move to close and click
         closeProfile()
-        df.to_csv(table_name)
-
-
+        #update record
+        df.loc[i] = [id, nick,alliance,profile_power, dead_troops,checksum_kill_point, kill_t1, kill_t2, kill_t3, kill_t4, kill_t5,valid]
+        if save_google:
+            OCR_Sheet.append_row([date_time,id,profile_power,dead_troops,checksum_kill_point,kill_t1,kill_t2,kill_t3,kill_t4,kill_t5])
+        if save_local:
+            df.to_csv(save_local_file_name)
