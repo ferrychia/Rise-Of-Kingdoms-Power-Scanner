@@ -11,11 +11,16 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
 class ROKScanner:
+    #Settings
+    save_local = True
+    save_google = False
+    no_run = 950
     bluestackPath = r"/Applications/BlueStacks.app"
     #scale the bluestack to non-full screen
     #location placed at:
     #top left: 208,97
     #bottom right: 1712,984
+
     def screenCapture(name: str):
         # part of the screen
         if name == 'profile':
@@ -183,13 +188,7 @@ def changeProfile(df):
 
 
 if __name__ == '__main__':
-
-    #Settings
-    save_local = True
-    save_google = False
-    no_run = 950
-
-    if save_google:
+    if ROKScanner.save_google:
         # use creds to create a client to interact with the Google Drive API
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
         creds = ServiceAccountCredentials.from_json_keyfile_name('secret.json', scope)
@@ -226,7 +225,7 @@ if __name__ == '__main__':
     now = datetime.datetime.now()
     date_time = now.strftime("%m/%d/%Y %H:%M:%S")
 
-    if save_local:
+    if ROKScanner.save_local:
         save_local_file_name = os.path.join(now.strftime('result/ROK_K530_Top950_%Y%m%d%H%M%S') + '.csv')
 
 
@@ -236,7 +235,7 @@ if __name__ == '__main__':
 
 
     os.system("open /Applications/BlueStacks.app")
-    for i in range(no_run):
+    for i in range(ROKScanner.no_run):
         # move to ranking position 1-3
         if i < 3:
             selectProfile(i)
@@ -338,7 +337,7 @@ if __name__ == '__main__':
         closeProfile()
         #update record
         df.loc[i] = [id, nick,alliance,profile_power, dead_troops,checksum_kill_point, kill_t1, kill_t2, kill_t3, kill_t4, kill_t5,valid]
-        if save_google:
+        if ROKScanner.save_google:
             OCR_Sheet.append_row([date_time,id,profile_power,dead_troops,checksum_kill_point,kill_t1,kill_t2,kill_t3,kill_t4,kill_t5])
-        if save_local:
+        if ROKScanner.save_local:
             df.to_csv(save_local_file_name)
