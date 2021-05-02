@@ -12,9 +12,11 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 class ROKScanner:
     #Global Settings
-    no_run = 900
+    no_run = 500
     # Whitelist all your alliance character you wished to track
     alliance_list = ['K530', 'PK30', '666', 'KOPO', 'PB30']
+    #283
+    #alliance_list = ['283F','283E','283K']
     save_local = True
     save_google = True
 
@@ -160,15 +162,15 @@ def selectProfile(index):
     time.sleep(1)
 
 def changeProfile(df):
-    # select 5th profile, skipping 4th profile
+    #close profile
     closeProfile()
+    # select 5th profile, skipping 4th profile
     selectProfile(4)
     # crop image to id only
     check_img_id = ImageGrab.grab(bbox=(935, 360, 1035, 385))
     # read ID
     check_id = OCR_digital(check_img_id)
     if checkPlayerId(check_id, df):
-        #close and back to select profile
         closeProfile()
         # select 5th profile again
         selectProfile(5)
@@ -178,8 +180,8 @@ def changeProfile(df):
         check2_id = OCR_digital(check2_img_id)
         # if 5th profile still doesn't work
         if checkPlayerId(check2_id, df):
-            # select 6th profile
             closeProfile()
+            # select 6th profile
             selectProfile(6)
 
 
@@ -228,15 +230,15 @@ if __name__ == '__main__':
     for i in range(ROKScanner.no_run):
         # move to ranking position 1-3
         if i < 3:
-            selectProfile(i)
+            #selectProfile(i)
             #if not starting from rank 1-3
-            #selectProfile(3)
+            selectProfile(3)
         else:
             selectProfile(3)
 
         # crop image to id only
         img_id = ImageGrab.grab(bbox=(935, 360, 1035, 385))
-        img_id.save('id.png')
+        #img_id.save('id.png')
         # read ID
         id = OCR_digital(img_id)
         print('player id:', id)
@@ -245,15 +247,16 @@ if __name__ == '__main__':
             changeProfile(df)
             # crop image to id only
             img_id = ImageGrab.grab(bbox=(935, 360, 1035, 385))
-            img_id.save('id.png')
+            #img_id.save('id.png')
             # read ID
             id = OCR_digital(img_id)
 
         #alliance
         img_alliance = ImageGrab.grab(bbox=(823, 485, 880, 505))
         img_alliance = cut_noise(img_alliance)
-        img_alliance.save('alliance.png')
+        #img_alliance.save('alliance.png')
         alliance = pytesseract.image_to_string(img_alliance,config='-c tessedit_char_whitelist=PK530PO6B --psm 7').strip()
+        #alliance = pytesseract.image_to_string(img_alliance, config='-c tessedit_char_whitelist=283FEK --psm 7').strip()
 
         if alliance not in ROKScanner.alliance_list:
             print(f'Alliance is not found in alliance whitelist: <{alliance}>')
@@ -262,6 +265,7 @@ if __name__ == '__main__':
             img_alliance = cut_noise(img_alliance)
             #img_alliance.save('alliance.png')
             alliance = pytesseract.image_to_string(img_alliance, config='-c tessedit_char_whitelist=PK530PO6B --psm 7').strip()
+            #alliance = pytesseract.image_to_string(img_alliance, config='-c tessedit_char_whitelist=283FEK --psm 7').strip()
 
         print(f'Alliance: <{alliance}>')
 
