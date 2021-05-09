@@ -12,7 +12,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 class ROKScanner:
     #Global Settings
-    no_run = 500
+    no_run = 1
     # Whitelist all your alliance character you wished to track
     alliance_list = ['K530', 'PK30', '666', 'KOPO', 'PB30']
     #283
@@ -215,7 +215,7 @@ if __name__ == '__main__':
 
     #Get time now for record insertion
     now = datetime.datetime.now()
-    date_time = now.strftime('%Y-%m-%d %H:%M:%S.%f')
+    date_time = now.strftime('%m/%d/%Y %H:%M:%S')
 
     if ROKScanner.save_local:
         save_local_file_name = os.path.join(now.strftime('result/ROK_K530_Top' + str(ROKScanner.no_run) + '_%Y%m%d%H%M%S') + '.csv')
@@ -339,7 +339,7 @@ if __name__ == '__main__':
         #update record
         df.loc[i] = [id, nick,alliance,profile_power, dead_troops,checksum_kill_point, kill_t1, kill_t2, kill_t3, kill_t4, kill_t5,valid]
         if ROKScanner.save_google:
-            OCR_Sheet.append_row([date_time,int(id),profile_power,dead_troops,checksum_kill_point,kill_t1,kill_t2,kill_t3,kill_t4,kill_t5])
+            OCR_Sheet.append_row([str(date_time),int(id),int(profile_power),dead_troops,checksum_kill_point,kill_t1,kill_t2,kill_t3,kill_t4,kill_t5],value_input_option="USER_ENTERED")
             if ROKScanner.updateRegister:
                 updateKingdomRegister(df_player_register, id, nick, alliance,Register_Sheet)
         if ROKScanner.save_local:
