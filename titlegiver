@@ -6,9 +6,13 @@ import discord
 import re
 from dotenv import load_dotenv
 
+#Create a .env File in the same directory as the titlegiver.py
+#Inside the .env file add the following parameter
+#Add the paramete DISCORD_TOKEN AND DISCORD_CHANNEL
+#The DISCORD TOKEN WILL BE YOUR BOT TOKEN
+#THE DISCORD CHANNEL WILL BE WHERE THE BOT WILL BE READING TITLE REQUEST
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-SERVER = os.getenv('DISCORD_SERVER')
 CHANNEL = os.getenv('DISCORD_CHANNEL')
 import discord
 
