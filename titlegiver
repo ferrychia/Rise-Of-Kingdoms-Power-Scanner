@@ -1,0 +1,201 @@
+import os
+import pyautogui
+import time
+
+import discord
+import re
+from dotenv import load_dotenv
+
+load_dotenv()
+TOKEN = os.getenv('DISCORD_TOKEN')
+SERVER = os.getenv('DISCORD_SERVER')
+CHANNEL = os.getenv('DISCORD_CHANNEL')
+import discord
+
+
+class MyClient(discord.Client):
+
+    async def on_ready(self):
+        print('Logged on as', self.user)
+
+    async def on_message(self, message):
+        # don't respond to ourselves
+        if message.author == self.user:
+            return
+        if message.channel.name == CHANNEL:
+            messageContent = message.content.lower()
+            print("Message: " + messageContent)
+            if bool(re.match("^\A\/(duke|scientist|architect)\s\d{1,4}\s\d{1,4}$",messageContent)):
+                digits = [int(s) for s in messageContent.split() if s.isdigit()]
+                os.system("open /Applications/BlueStacks.app")
+                #out of city
+                pyautogui.moveTo(280, 910)
+                time.sleep(0.5)
+                pyautogui.click()
+                time.sleep(1)
+
+                #Open search
+                pyautogui.moveTo(720, 160)
+                pyautogui.click()
+                time.sleep(0.5)
+
+                #Enter X Coord
+                pyautogui.moveTo(940, 300)
+                time.sleep(0.5)
+                pyautogui.click()
+                time.sleep(0.5)
+                pyautogui.typewrite(str(digits[0]))
+                time.sleep(0.5)
+
+                #Enter Y Coord
+                pyautogui.moveTo(1120, 300)
+                time.sleep(0.5)
+                pyautogui.click()
+                time.sleep(0.5)
+                pyautogui.click()
+                time.sleep(0.5)
+                pyautogui.typewrite(str(digits[1]))
+                time.sleep(0.5)
+
+                #Search
+                pyautogui.moveTo(1250, 300)
+                time.sleep(0.5)
+                pyautogui.click()
+                time.sleep(0.5)
+                pyautogui.click()
+                time.sleep(2)
+
+                #Click center city
+                pyautogui.moveTo(930, 500)
+                pyautogui.click()
+                time.sleep(0.5)
+
+                #Click title
+                pyautogui.moveTo(360, 370)
+
+                pyautogui.click()
+                time.sleep(1)
+
+                if bool(re.match("^\A\/(duke)",messageContent)):
+                    print("Duke")
+                    #920
+                    pyautogui.moveTo(820, 600)
+                    time.sleep(0.5)
+                    pyautogui.click()
+                    time.sleep(0.5)
+                elif bool(re.match("^\A\/(scientist)", messageContent)):
+                    print("Scientist")
+                    #1090
+                    pyautogui.moveTo(1090, 600)
+                    time.sleep(0.5)
+
+                    pyautogui.click()
+                    time.sleep(0.5)
+                elif bool(re.match("^\A\/(architect)", messageContent)):
+                    print("Architect")
+                    #1360
+                    pyautogui.moveTo(1360, 600)
+                    time.sleep(0.5)
+
+                    pyautogui.click()
+                    time.sleep(0.5)
+
+                #Confirm Title
+                pyautogui.moveTo(960, 900)
+                time.sleep(0.5)
+                pyautogui.click()
+
+                #zeroing
+                time.sleep(0.5)
+                pyautogui.moveTo(280, 910)
+                time.sleep(1.5)
+                pyautogui.click()
+
+                # out of city
+                pyautogui.moveTo(280, 910)
+                time.sleep(0.5)
+                pyautogui.click()
+                time.sleep(1)
+
+                # Open search
+                pyautogui.moveTo(720, 160)
+                pyautogui.click()
+                time.sleep(0.5)
+
+                # Enter X Coord
+                pyautogui.moveTo(940, 300)
+                time.sleep(0.5)
+                pyautogui.click()
+                time.sleep(0.5)
+                pyautogui.typewrite(str(digits[0]))
+                time.sleep(0.5)
+
+                # Enter Y Coord
+                pyautogui.moveTo(1120, 300)
+                time.sleep(0.5)
+                pyautogui.click()
+                time.sleep(0.5)
+                pyautogui.click()
+                time.sleep(0.5)
+                pyautogui.typewrite(str(digits[1]))
+                time.sleep(0.5)
+
+                # Search
+                pyautogui.moveTo(1250, 300)
+                time.sleep(0.5)
+                pyautogui.click()
+                time.sleep(0.5)
+                pyautogui.click()
+                time.sleep(2)
+
+                # Click center city
+                pyautogui.moveTo(930, 500)
+                pyautogui.click()
+                time.sleep(0.5)
+
+                # Click title
+                pyautogui.moveTo(1076, 360)
+
+                pyautogui.click()
+                time.sleep(1)
+
+                if bool(re.match("^\A\/(duke)", messageContent)):
+                    print("Duke")
+                    # 920
+                    pyautogui.moveTo(820, 600)
+                    time.sleep(0.5)
+                    pyautogui.click()
+                    time.sleep(0.5)
+                elif bool(re.match("^\A\/(scientist)", messageContent)):
+                    print("Scientist")
+                    # 1090
+                    pyautogui.moveTo(1090, 600)
+                    time.sleep(0.5)
+
+                    pyautogui.click()
+                    time.sleep(0.5)
+                elif bool(re.match("^\A\/(architect)", messageContent)):
+                    print("Architect")
+                    # 1360
+                    pyautogui.moveTo(1360, 600)
+                    time.sleep(0.5)
+
+                    pyautogui.click()
+                    time.sleep(0.5)
+
+                # Confirm Title
+                pyautogui.moveTo(960, 900)
+                time.sleep(0.5)
+                pyautogui.click()
+
+                # zeroing
+                time.sleep(0.5)
+                pyautogui.moveTo(280, 910)
+                time.sleep(0.5)
+                pyautogui.click()
+                time.sleep(1.5)
+            else:
+                await message.channel.send("Wrong Command! Please use /{Title} {X Coordinate} {Y Coordinate} i.e. /duke 244 1020 or /scientist 123 456 or /architect 222 222")
+
+client = MyClient()
+client.run(TOKEN)
