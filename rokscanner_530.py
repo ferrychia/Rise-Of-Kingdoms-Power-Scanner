@@ -8,24 +8,24 @@ import pyautogui
 import pyscreenshot as ImageGrab
 import clipboard
 import gspread
-from sys import exit
-
 from oauth2client.service_account import ServiceAccountCredentials
 
 class ROKScanner:
     #Global Settings
-    no_run = 300
+    no_run = 900
     # Whitelist all your alliance character you wished to track
+    alliance_list = ['K530', '6P!', '666', 'KOPO', 'PB30']
+    #@TODO: Traverse through the whitelist and pick up unique char for tesseract whitelisting config
     #283
-    alliance_list = ['283F','283C']
+    #alliance_list = ['283F','283E','283K']
     save_local = True
     save_google = True
 
     #Google Settings
-    worksheet_filename = 'Kingdom 1283 Management Sheet'
+    worksheet_filename = 'Kingdom Player Datasheet'
     sheetname_OCR = 'OCR DATA'
     updateRegister = False
-    sheetname_kingdom_register = 'Player Register'
+    sheetname_kingdom_register = 'K530 Player Register'
 
     #bluestackpath
     bluestackPath = r"/Applications/BlueStacks.app"
@@ -136,33 +136,35 @@ def checkPlayerId(id, df):
 def closeProfile():
     # move to profile close and click
     pyautogui.moveTo(1490, 235)
-    time.sleep(2)
+    time.sleep(1)
     pyautogui.click()
-    time.sleep(2)
+    time.sleep(1)
 
 
 def copyNickSelectKillDetail():
     # Copy Nick before
     pyautogui.moveTo(840, 410)
-    time.sleep(2)
+    time.sleep(1)
     pyautogui.click()
-    time.sleep(2)
+    time.sleep(1)
     # move to kill details and click
     pyautogui.moveTo(1258, 468)
-    time.sleep(2)
+    time.sleep(1)
     pyautogui.click()
-    time.sleep(2)
+    time.sleep(1)
 
 
 def selectProfile(index):
     x = 960
     y = 400  # 1st profile position
     pyautogui.moveTo(y, y + (index * 95))
-    time.sleep(2)
+    time.sleep(1)
     pyautogui.click()
-    time.sleep(2)
+    time.sleep(1)
 
 def changeProfile(df):
+    #close profile
+    closeProfile()
     # select 5th profile, skipping 4th profile
     selectProfile(4)
     # crop image to id only
@@ -190,34 +192,12 @@ def updateKingdomRegister(df, id, nick,alliance,register_sheet):
         df.loc[df.ID == int(id), 'NAME'] = nick
         if (alliance in ROKScanner.alliance_list):
             df.loc[df.ID == int(id), 'ALLIANCE'] = alliance
+        df.loc[df.ID == int(id), 'INKD'] = ''
     else:
         print("adding new record")
-        df.loc[len(df)] = [id,nick,alliance,'','',id,id]
+        df.loc[len(df)] = [id,nick,alliance,'']
 
     register_sheet.update([df.columns.values.tolist()] + df.values.tolist())
-
-def getX(img):
-    x = pyautogui.locateOnScreen(img, confidence = 0.9)
-    #count = 0
-    #while (count<10):
-    if (x):
-        print("Found: " +  img + " at: " + str(x))
-        return x
-    else:
-        print("Not Found... Try again in 5 seconds")
-        return False
-        #time.sleep(5)
-        #++count
-
-
-
-def calculateY():
-    ranked_1 = getX("ranked_1.png")
-    print(ranked_1)
-    ranked_2 = getX("ranked_2.png")
-    print(ranked_2)
-    deltaY =  ranked_2.top - ranked_1.top
-    print(deltaY)
 
 if __name__ == '__main__':
     if ROKScanner.save_google:
@@ -239,50 +219,21 @@ if __name__ == '__main__':
     date_time = now.strftime('%m/%d/%Y %H:%M:%S')
 
     if ROKScanner.save_local:
-        save_local_file_name = os.path.join(now.strftime('result/ROK_K283_Top' + str(ROKScanner.no_run) + '_%Y%m%d%H%M%S') + '.csv')
+        save_local_file_name = os.path.join(now.strftime('result/ROK_K530_Top' + str(ROKScanner.no_run) + '_%Y%m%d%H%M%S') + '.csv')
 
 
     df = pd.DataFrame(columns=(
-        'id', 'nick', 'alliance', 'profile_power', 'dead', 'kill_4', 'kill_5'))
+        'id', 'nick', 'alliance', 'profile_power', 'dead', 'total_kill_pt', 'kill_1', 'kill_2',
+        'kill_3', 'kill_4', 'kill_5', 'validKillPoint'))
 
-    #Open Bluestack game
+
     os.system("open /Applications/BlueStacks.app")
-    time.sleep(2)
-    # Go to profile
-    pyautogui.press("G")
-    time.sleep(2)
-
-    #Ready load ranking board
-    ranking = getX("ranking.png")
-    if ranking:
-        pyautogui.click(ranking)
-        time.sleep(2)
-        individual_kills = getX("Power_Ranking.png")
-        if individual_kills:
-            pyautogui.click(individual_kills)
-            time.sleep(2)
-            kill_board = getX("Power_Board_Banner.png")
-            if kill_board:
-                print("Can start scan")
-                calculateY()
-            else:
-                print("Unable to start")
-                exit()
-        else:
-            print("Unable to locate kill board")
-            exit()
-    else:
-        print("Unable to find ranking...")
-        exit()
-
-
-
-
     for i in range(ROKScanner.no_run):
         # move to ranking position 1-3
-        ranked_1 = getX("ranked_1.png")
-        if ranked_1:
+        if i < 3:
             selectProfile(i)
+            #if not starting from rank 1-3
+            #selectProfile(3)
         else:
             selectProfile(3)
 
@@ -305,7 +256,8 @@ if __name__ == '__main__':
         img_alliance = ImageGrab.grab(bbox=(823, 485, 880, 505))
         img_alliance = cut_noise(img_alliance)
         #img_alliance.save('alliance.png')
-        alliance = pytesseract.image_to_string(img_alliance, config='-c tessedit_char_whitelist=283FC --psm 7').strip()
+        alliance = pytesseract.image_to_string(img_alliance,config='-c tessedit_char_whitelist=PK530O6B! --psm 7').strip()
+        #alliance = pytesseract.image_to_string(img_alliance, config='-c tessedit_char_whitelist=283FEK --psm 7').strip()
 
         if alliance not in ROKScanner.alliance_list:
             print(f'Alliance is not found in alliance whitelist: <{alliance}>')
@@ -313,7 +265,8 @@ if __name__ == '__main__':
             img_alliance = ImageGrab.grab(bbox=(823, 485, 866, 505))
             img_alliance = cut_noise(img_alliance)
             #img_alliance.save('alliance.png')
-            alliance = pytesseract.image_to_string(img_alliance, config='-c tessedit_char_whitelist=283FC --psm 7').strip()
+            alliance = pytesseract.image_to_string(img_alliance, config='-c tessedit_char_whitelist=PK530O6B! --psm 7').strip()
+            #alliance = pytesseract.image_to_string(img_alliance, config='-c tessedit_char_whitelist=283FEK --psm 7').strip()
 
         print(f'Alliance: <{alliance}>')
 
@@ -327,7 +280,25 @@ if __name__ == '__main__':
         copyNickSelectKillDetail()
         nick = clipboard.paste()
         print("Nick: ", nick)
+        # capture Total Kills Point
+        img_total_kill_point = ImageGrab.grab(bbox=(1075, 505, 1225, 535))
+        #img_total_kill_point.save('total_kill_pt.png')T5
+        total_kill_point = OCR_box(img_total_kill_point)
+        print('total kill point:', total_kill_point)
 
+        # capture T1 Kills
+        img_kill_t1 = ImageGrab.grab(bbox=(1020, 685, 1150, 724))
+        #img_kill_t1.save('t1.png')
+        kill_t1 = OCR_box(img_kill_t1)
+        print('t1 kill:', kill_t1)
+        img_kill_t2 = ImageGrab.grab(bbox=(1020, 726, 1150, 764))
+        #img_kill_t2.save('t2.png')
+        kill_t2 = OCR_box(img_kill_t2)
+        print('t2 kill:', kill_t2)
+        img_kill_t3 = ImageGrab.grab(bbox=(1020, 766, 1150, 807))
+        #img_kill_t3.save('t3.png')
+        kill_t3 = OCR_box(img_kill_t3)
+        print('t3 kill:', kill_t3)
         img_kill_t4 = ImageGrab.grab(bbox=(1020, 809, 1150, 849))
         #img_kill_t4.save('t4.png')
         kill_t4 = OCR_box(img_kill_t4)
@@ -336,12 +307,17 @@ if __name__ == '__main__':
         #img_kill_t5.save('t5.png')
         kill_t5 = OCR_box(img_kill_t5)
         print('t5 kill:', kill_t5)
+        checksum_kill_point = kill_t1/5 + kill_t2*2 + kill_t3*4 + kill_t4*10 + kill_t5*20
+        print('sum kill point:',checksum_kill_point)
+        # verify if kill point is valid
+        valid = (int(total_kill_point) == int(checksum_kill_point))
+        print('is kill point valid?:', valid)
 
         # move to more info and click
         pyautogui.moveTo(580, 765)
-        time.sleep(2)
+        time.sleep(1)
         pyautogui.click()
-        time.sleep(2)
+        time.sleep(1)
         # capture screen
         img_dead = ImageGrab.grab(bbox=(1320, 560, 1435, 590))
         img_dead = w2b(img_dead)
@@ -356,15 +332,15 @@ if __name__ == '__main__':
         print('dead:', dead_troops)
         # move to close and click (Closing more info box)
         pyautogui.moveTo(1515, 190)
-        time.sleep(2)
+        time.sleep(1)
         pyautogui.click()
-        time.sleep(2)
+        time.sleep(1)
         # move to close and click
         closeProfile()
         #update record
-        df.loc[i] = [id, nick,alliance,profile_power, dead_troops, kill_t4, kill_t5]
+        df.loc[i] = [id, nick,alliance,profile_power, dead_troops,checksum_kill_point, kill_t1, kill_t2, kill_t3, kill_t4, kill_t5,valid]
         if ROKScanner.save_google:
-            OCR_Sheet.append_row([str(date_time),int(id),int(profile_power),dead_troops,kill_t4,kill_t5],value_input_option="USER_ENTERED")
+            OCR_Sheet.append_row([str(date_time),int(id),int(profile_power),dead_troops,checksum_kill_point,kill_t1,kill_t2,kill_t3,kill_t4,kill_t5],value_input_option="USER_ENTERED")
             if ROKScanner.updateRegister:
                 updateKingdomRegister(df_player_register, id, nick, alliance,Register_Sheet)
         if ROKScanner.save_local:
